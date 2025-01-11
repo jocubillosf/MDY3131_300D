@@ -1,0 +1,84 @@
+VAR B_ANNIO_PROCESO NUMBER
+EXEC :B_ANNIO_PROCESO := 2020;
+DECLARE
+    V_ID_EMP NUMBER(12);
+    V_NUMRUN_EMP NUMBER(15);
+    V_DVRUN_EMP VARCHAR2(1);
+    V_NOMBRE_EMP VARCHAR(50);
+    V_COMUNA VARCHAR(50);
+    V_SUELDO_EMP NUMBER(15);
+    V_PORC_MOVIL_NORMAL NUMBER(2);
+    V_VALOR_MOVIL_NORMAL NUMBER(15);
+    V_VAlOR_MOVIL_EXTRA NUMBER(15):= 0;
+    V_VALOR_MOVIL_TOTAL NUMBER(15);
+    V_ID_MIN NUMBER(15);
+    V_ID_MAX NUMBER(15);
+BEGIN
+    EXECUTE IMMEDIATE ('TRUNCATE TABLE PROY_MOVILIZACION');
+    SELECT MIN(ID_EMP), MAX(ID_EMP)
+    INTO V_ID_MIN, V_ID_MAX
+    FROM EMPLEADO;
+    
+    WHILE V_ID_MIN < V_ID_MAX LOOP
+        SELECT E.ID_EMP
+            ,E.NUMRUN_EMP
+            ,E.DVRUN_EMP
+            ,E.PNOMBRE_EMP || ' ' || E.SNOMBRE_EMP || ' ' || E.APPATERNO_EMP || ' ' || E.APMATERNO_EMP "NOMBRE EMPLEADO"
+            ,COM.NOMBRE_COMUNA
+            ,E.SUELDO_BASE
+            ,TRUNC(E.SUELDO_BASE / 100000) "PORC_MOVIL_NORMAL"
+            ,TRUNC(TRUNC(E.SUELDO_BASE / 100000)* E.SUELDO_BASE /100) "VALOR_MOVIL_NORMAL"
+        INTO V_ID_EMP,
+            V_NUMRUN_EMP,
+            V_DVRUN_EMP,
+            V_NOMBRE_EMP,
+            V_COMUNA,
+            V_SUELDO_EMP,
+            V_PORC_MOVIL_NORMAL,
+            V_VALOR_MOVIL_NORMAL
+        FROM EMPLEADO E
+        JOIN COMUNA COM
+        ON E.ID_COMUNA = COM.ID_COMUNA
+        WHERE E.ID_EMP = V_ID_MIN;
+        
+        V_VAlOR_MOVIL_EXTRA:= 
+        CASE 
+            WHEN V_COMUNA = 'María Pinto' THEN  20000
+            WHEN V_COMUNA ='Curacaví' THEN  25000
+            WHEN V_COMUNA ='Talagante' THEN 30000
+            WHEN V_COMUNA ='El Monte' THEN  35000
+            WHEN V_COMUNA ='Buin' THEN 40000
+            ELSE 0
+        END;
+        
+        V_VALOR_MOVIL_TOTAL := V_VALOR_MOVIL_NORMAL + V_VALOR_MOVIL_EXTRA;
+        V_ID_MIN := V_ID_MIN + 10;
+    INSERT INTO proy_movilizacion (
+        anno_proceso,
+        id_emp,
+        numrun_emp,
+        dvrun_emp,
+        nombre_empleado,
+        nombre_comuna,
+        sueldo_base,
+        porc_movil_normal,
+        valor_movil_normal,
+        valor_movil_extra,
+        valor_total_movil
+    ) VALUES (
+        :B_ANNIO_PROCESO,
+        V_ID_EMP,
+        V_NUMRUN_EMP,
+        V_DVRUN_EMP,
+        V_NOMBRE_EMP,
+        V_COMUNA,
+        V_SUELDO_EMP,
+        V_PORC_MOVIL_NORMAL,
+        V_VALOR_MOVIL_NORMAL,
+        V_VALOR_MOVIL_EXTRA,
+        V_VALOR_MOVIL_TOTAL
+    );
+    END LOOP;
+END;
+
+
