@@ -1,0 +1,35 @@
+DECLARE
+V_MULTA NUMBER(15);
+CURSOR cur_pacientes IS
+SELECT
+    PAC.PAC_RUN
+    ,PAC.DV_RUN
+    ,PAC.PNOMBRE || ' ' || SNOMBRE || ' ' || APATERNO ||' ' || AMATERNO NOMBRE_PACIENTE
+    ,ATE.ATE_ID NUM_ATENCION
+    ,PA.FECHA_VENC_PAGO
+    ,PA.FECHA_PAGO
+    ,PA.FECHA_PAGO - PA.FECHA_VENC_PAGO DIAS_MOROSIDAD
+    ,ESP.NOMBRE ESPECIALIDAD
+FROM PACIENTE PAC
+JOIN ATENCION ATE
+ON PAC.PAC_RUN = ATE.PAC_RUN
+JOIN PAGO_ATENCION PA
+ON ATE.ATE_ID = PA.ATE_ID
+JOIN ESPECIALIDAD ESP
+ON ATE.ESP_ID = ESP.ESP_ID
+WHERE PA.FECHA_PAGO - PA.FECHA_VENC_PAGO >= 0;
+
+BEGIN
+    FOR rec_pacientes IN cur_pacientes
+    LOOP
+     V_MULTA:=
+    CASE 
+        WHEN rec_pacientes.ESPECIALIDAD = 'Cirugía General' OR rec_pacientes.ESPECIALIDAD  = 'Dematología'
+        THEN 1200 * rec_pacientes.DIAS_MOROSIDAD
+        WHEN rec_pacientes.ESPECIALIDAD = 'Ortopedia' OR rec_pacientes.ESPECIALIDAD = 'Traumatología'
+        THEN 1300 * rec_pacientes.DIAS_MOROSIDAD
+    END;
+    
+        DBMS_OUTPUT.PUT_LINE(rec_pacientes.NOMBRE_PACIENTE);
+    END LOOP;
+END;
